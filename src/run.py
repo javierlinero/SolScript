@@ -1,46 +1,46 @@
 import openai
 import pythx
 import json
+import os
+from dotenv import dotenv_values
 
 def main():
     # https://platform.openai.com/docs/guides/fine-tuning/use-a-fine-tuned-model
-    # load sb-curated
 
-    # pre-process data to i/o for openai llm
+    # Load environment variables from .env file
+    env_vars = dotenv_values("gptkey.env")
 
-    # {"prompt": "<prompt text>", "completion": "<ideal generated text>"}
-    # {"prompt": "<prompt text>", "completion": "<ideal generated text>"}
-    # {"prompt": "<prompt text>", "completion": "<ideal generated text>"}
+    # Access specific environment variables
+    openaikey = env_vars.get("OPENAIKEY")
 
-    # jsonify data into "train.json"
-
-    client = openai.OpenAI()
+    # we pre-process data into fine_tuning_prompt.jsonl
+    openai.api_key = openaikey
 
     # create openai file
-    client.files.create(
-        file=open("train.json", "rb"),
+    file_response = openai.File.create(
+        file=open("fine_tuning_prompt.jsonl", "rb"),
         purpose="fine-tune"
     )
+    file_id = file_response['id']
 
     # setup open ai w/ relative API key in .env
 
-    client.fine_tuning.jobs.create(
-        training_file="train.json", 
-        model="gpt-3.5-turbo"
+    fine_tune_response = openai.FineTune.create(
+        training_file=file_id, 
+        model="davinci-002"
     )
-
-    # train model w/ curated data 
-
+    fine_tune_id = fine_tune_response['id']
+    print(fine_tune_id)
     # create output w/ prompt 
 
-    completion = client.chat.completions.create(
-        model="ft:gpt-3.5-turbo:my-org:custom_suffix:id",
-        messages=[
-            {"role": "system", "content": "You are a helpful assistant."},
-            {"role": "user", "content": "Hello!"}
-        ]
-    )
-    print(completion.choices[0].message)
+    # completion = openai.chat.completions.create(
+    #     model="ft:gpt-3.5-turbo:my-org:custom_suffix:id",
+    #     messages=[
+    #         {"role": "system", "content": "You are a helpful assistant."},
+    #         {"role": "user", "content": "Hello!"}
+    #     ]
+    # )
+    # print(completion.choices[0].message)
 
     # feed prompt thru loop to 3 different llm models with specified prompt to score based on number of vulnerabities
 
