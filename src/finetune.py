@@ -19,15 +19,20 @@ def main():
         api_key = openaikey
     )
 
-    # create openai file
-    with open("fine_tuning_prompt.jsonl", "rb") as file:
-        file_response = client.files.create(file=file, purpose="fine-tune")
-        file_id = file_response.id
-    # setup open ai w/ relative API key in .env
+    # create openai files for validation and training set
+    with open("fine_tuning_prompt_train.jsonl", "rb") as file:
+        train_response = client.files.create(file=file, purpose="fine-tune")
+        train_id = train_response.id
 
+    with open("fine_tuning_prompt_val.jsonl", "rb") as file:
+        val_response = client.files.create(file=file, purpose="fine-tune")
+        val_id = val_response.id
+    
+    # setup open ai w/ relative API key in .env
     fine_tune_response = client.fine_tuning.jobs.create(
-        training_file=file_id,
-        model="davinci-002")
+        training_file= train_id,
+        validation_file= val_id,
+        model="gpt-3.5-turbo-0125")
     fine_tune_id = fine_tune_response.id
     print(fine_tune_id)
 
