@@ -20,11 +20,11 @@ def main():
     )
 
     # create openai files for validation and training set
-    with open("fine_tuning_prompt_train.jsonl", "rb") as file:
+    with open("ft_critique_train.jsonl", "rb") as file:
         train_response = client.files.create(file=file, purpose="fine-tune")
         train_id = train_response.id
 
-    with open("fine_tuning_prompt_val.jsonl", "rb") as file:
+    with open("ft_critique_val.jsonl", "rb") as file:
         val_response = client.files.create(file=file, purpose="fine-tune")
         val_id = val_response.id
     

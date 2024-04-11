@@ -1,44 +1,33 @@
 import os
 import json
-import re
 import random
+
+MAX_TOKENS = 16384  # Maximum tokens allowed for fine-tuning in GPT-3.5 Turbo
+NUM_CONTRACTS = 1250  # Number of contracts to generate
 
 def generate_jsonl_entries(dataset_dir):
     # output files
     output_file_train = 'fine_tuning_prompt_train.jsonl'
     output_file_val = 'fine_tuning_prompt_val.jsonl'
-    pattern = re.compile(r'\* @vulnerable_at_lines: ([\d,]+)')
 
     entries = []
 
     for root, dirs, files in os.walk(dataset_dir):
         for file_name in files:
             if file_name.endswith('.sol'):
-                vulnerability = os.path.basename(root)
-                vulnerability = vulnerability.replace('_', ' ')  # Fix underscores
-
-                # init message
-                messages = [
-                    {"role": "system", "content": "SolScript is a smart contract code generator trying to reduce the number of vulnerabilities."},
-                    {"role": "user", "content": f"Write a solidity smart contract with {vulnerability} vulnerabilities according to the DASP standard. After, reproduce the lines where the vulnerabilities occur."}
-                ]
-
                 file_path = os.path.join(root, file_name)
                 with open(file_path, 'r') as file_content:
-                    lines = file_content.read().splitlines()
-                    completion = '\n'.join(lines)
+                    completion = file_content.read()
 
-                    vulnerability_lines = []
-                    for line in lines:
-                        match = pattern.search(line)
-                        if match:
-                            line_numbers = match.group(1)
-                            vulnerability_lines.extend([int(num) for num in line_numbers.split(',')])
+                    # Check if the completion exceeds the token limit
+                    if len(completion.split()) > MAX_TOKENS:
+                        continue
 
-                    # retrieve actual vulnerable lines from the file and append
-                    vulnerable_lines_text = [lines[i - 1] for i in vulnerability_lines]  # Adjusting index for 0-based
-                    vulnerability_info = "\nVulnerable lines:\n" + '\n'.join(vulnerable_lines_text)
-                    completion += vulnerability_info
+                    # Initialize messages
+                    messages = [
+                        {"role": "system", "content": "SolScript is a smart contract code generator trying to reduce the number of vulnerabilities."},
+                        {"role": "user", "content": f"Write a solidity smart contract with respect to the guidelines of DASP (Decentralized Application Security Project)"}
+                    ]
 
                     # Append the coder completion
                     messages.append({"role": "assistant", "content": completion})
@@ -48,13 +37,15 @@ def generate_jsonl_entries(dataset_dir):
     # randomize the entries
     random.shuffle(entries)
 
+    # select 1250 random entries
+    selected_entries = random.sample(entries, NUM_CONTRACTS)
+
     # split indices by 75% for training
-    num_entries = len(entries)
-    split_index = int(0.75 * num_entries)
+    split_index = int(0.75 * NUM_CONTRACTS)
 
     # split into training & validation
-    train_entries = entries[:split_index]
-    val_entries = entries[split_index:]
+    train_entries = selected_entries[:split_index]
+    val_entries = selected_entries[split_index:]
 
     with open(output_file_train, 'w') as jsonl_file_train:
         for entry in train_entries:
@@ -65,5 +56,5 @@ def generate_jsonl_entries(dataset_dir):
             jsonl_file_val.write(json.dumps(entry) + '\n')
 
 if __name__ == '__main__':
-    dataset_dir = '../sb-curated/dataset'  # Path to the dataset directory
+    dataset_dir = '../contracts'  # Path to the dataset directory
     generate_jsonl_entries(dataset_dir)
