@@ -4,7 +4,8 @@ import json
 import time
 import re
 
-solscript = "ft:gpt-3.5-turbo-0125:sccontracts::9CeGYRLm"
+# finedtuned: ft:gpt-3.5-turbo-0125:sccontracts::9CeGYRLm
+solscript = "gpt-3.5-turbo-0125"
 solscriptcritique = "gpt-4-turbo-2024-04-09"
 NUM_TRIALS = 2
 
@@ -70,7 +71,7 @@ def main():
             {"role": "system", "content": "SolScriptCritique is a smart contract code evaluator trying to reduce the number of vulnerabilities."},
         ]
         time_step = 0
-        with open(f"poster_data/feedback_data_{key}.txt", "w") as data:
+        with open(f"poster_data/feedback_data_{key}_baseline.txt", "w") as data:
             for trial in range(NUM_TRIALS):
                 generated_contract = generate_contract(client, message_history_generate)
                 message_history_generate.append({"role": "assistant", "content": generated_contract})
@@ -94,9 +95,9 @@ def main():
                     generated_contract = generate_contract(client, message_history_generate)
                     message_history_generate.append({"role": "assistant", "content": generated_contract})
                     message_history_critique.append({"role": "user", "content": critique_prompt + '\n' + generated_contract})
-                with open(f"history_feedback/msg_his_generate_trial{trial}_{key}.json", 'w') as outfile:
+                with open(f"history_feedback/msg_his_generate_trial{trial}_{key}_baseline.json", 'w') as outfile:
                     json.dump(message_history_generate, outfile)
-                with open(f"history_feedback/msg_his_critique_trial{trial}_{key}.json", 'w') as outfile:
+                with open(f"history_feedback/msg_his_critique_trial{trial}_{key}_baseline.json", 'w') as outfile:
                     json.dump(message_history_critique, outfile)
 
 if __name__ == '__main__':
